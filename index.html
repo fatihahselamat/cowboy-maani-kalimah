@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#7c3f16">
+
+<title>AR Cowboy Tafsir — معاني الكلمات</title>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Bangers&family=Noto+Sans+Arabic:wght@400;600;700;800&family=Outfit:wght@400;600;700;800;900&family=Rye&display=swap" rel="stylesheet">
+
+<!-- Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<style>
+:root{
+  --wood:#7a3d18;
+  --wood2:#4b250f;
+  --gold:#ffd166;
+  --cyan:#45f5ff;
+  --green:#65ff91;
+  --red:#ff5c62;
+  --cream:#fff1c9;
+  --brown:#3a1e0e;
+}
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+  margin:0;
+  overflow:hidden;
+  background:#1b0d05;
+  font-family:"Outfit",sans-serif;
+}
+
+button{
+  font-family:"Outfit",sans-serif;
+}
+
+.arabic{
+  font-family:"Noto Sans Arabic","Amiri",serif;
+  direction:rtl;
+  unicode-bidi:isolate;
+  line-height:1.8;
+}
+
+#game{
+  position:relative;
+  width:100vw;
+  height:100dvh;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 30%,rgba(255,210,110,.22),transparent 40%),
+    linear-gradient(#76cbea 0 48%,#d9a05a 48% 100%);
+}
+
+/* CAMERA */
+
+#cameraVideo{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transform:scaleX(-1);
+  z-index:1;
+}
+
+#fallbackScene{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  background:
+    linear-gradient(to bottom,
+      #63c8ef 0%,
+      #9ce2f7 43%,
+      #d9a05a 44%,
+      #bb7838 100%);
+}
+
+.sun{
+  position:absolute;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  background:#ffe46d;
+  top:18%;
+  right:8%;
+  box-shadow:0 0 80px #fff19b;
+}
+
+.mountain{
+  position:absolute;
+  bottom:25%;
+  width:0;
+  height:0;
+  border-left:180px solid transparent;
+  border-right:180px solid transparent;
+  border-bottom:220px solid #9a5831;
+  opacity:.75;
+}
+
+.m1{left:-80px}
+.m2{right:-100px;transform:scale(.8)}
+
+.cactus{
+  position:absolute;
+  bottom:16%;
+  font-size:80px;
+  filter:drop-shadow(0 8px 5px rgba(0,0,0,.3));
+}
+
+.c1{left:5%}
+.c2{right:6%;transform:scale(.75)}
+
+.town{
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  height:24%;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-around;
+  opacity:.9;
+}
+
+.building{
+  width:19%;
+  height:80%;
+  background:#8b451f;
+  border:6px solid #51260f;
+  border-bottom:0;
+  position:relative;
+}
+
+.building:before{
+  content:"";
+  position:absolute;
+  top:-28px;
+  left:-10px;
+  right:-10px;
+  height:32px;
+  background:#6e3518;
+  border:5px solid #47200c;
+}
+
+.building span{
+  position:absolute;
+  top:15px;
+  width:100%;
+  text-align:center;
+  color:#ffe3a1;
+  font-family:"Rye",serif;
+  font-size:clamp(10px,2vw,20px);
+}
+
+/* overlay tint */
+#cameraTint{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background:
+    linear-gradient(to bottom,
+      rgba(31,14,4,.36),
+      transparent 22%,
+      transparent 72%,
+      rgba(34,15,4,.55));
+}
+
+/* particles */
+#fxCanvas{
+  position:absolute;
+  inset:0;
+  z-index:40;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+/* HUD */
+
+#hud{
+  position:absolute;
+  z-index:10;
+  top:0;
+  left:0;
+  right:0;
+  padding:8px;
+  pointer-events:none;
+}
+
+.woodPanel{
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.025) 0px,
+      rgba(255,255,255,.025) 2px,
+      transparent 2px,
+      transparent 7px
+    ),
+    linear-gradient(135deg,#6f3516,#3b1b0b);
+  border:3px solid #d99a4d;
+  box-shadow:
+    inset 0 0 0 2px #3b1a09,
+    0 6px 20px rgba(0,0,0,.35);
+}
+
+.topbar{
+  max-width:1100px;
+  margin:auto;
+  border-radius:16px;
+  padding:7px 10px;
+  display:grid;
+  grid-template-columns:1.2fr auto auto auto;
+  align-items:center;
+  gap:8px;
+  color:white;
+}
+
+.logo{
+  min-width:0;
+}
+
+.logoTitle{
+  font-family:"Rye",serif;
+  color:#ffd66f;
+  font-size:clamp(14px,2.2vw,26px);
+  text-shadow:2px 2px #4a1e08;
+  white-space:nowrap;
+}
+
+.logoSub{
+  font-size:10px;
+  opacity:.9;
+}
+
+.stat{
+  background:rgba(0,0,0,.25);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;
+  padding:5px 8px;
+  text-align:center;
+  white-space:nowrap;
+  font-size:12px;
+}
+
+.stat strong{
+  color:#ffe56f;
+  font-size:15px;
+}
+
+.progressWrap{
+  max-width:1100px;
+  margin:5px auto 0;
+  height:7px;
+  background:#241107;
+  border:1px solid #b8702f;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+#progress{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#ffd34e,#50f5ff);
+  transition:.35s;
+}
+
+/* QUESTION */
+
+#questionPanel{
+  position:absolute;
+  z-index:12;
+  top:82px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(92vw,720px);
+  pointer-events:none;
+}
+
+.questionCard{
+  position:relative;
+  text-align:center;
+  background:#f5d99c;
+  color:#42220d;
+  padding:7px 16px 9px;
+  border-radius:9px;
+  border:3px solid #704017;
+  box-shadow:
+    inset 0 0 30px rgba(101,48,9,.15),
+    0 5px 14px rgba(0,0,0,.25);
+}
+
+.questionCard:before,
+.questionCard:after{
+  content:"★";
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  color:#7d4619;
+}
+
+.questionCard:before{left:10px}
+.questionCard:after{right:10px}
+
+.smallPrompt{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+
+#questionWord{
+  font-size:clamp(22px,4vw,38px);
+  font-weight:800;
+  line-height:1.35;
+}
+
+/* middle must stay clear */
+
+#trackingBadge{
+  position:absolute;
+  z-index:15;
+  left:50%;
+  top:43%;
+  transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(6px);
+  color:white;
+  padding:7px 13px;
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;
+  font-size:11px;
+  pointer-events:none;
+  opacity:.82;
+}
+
+/* targets */
+
+#targets{
+  position:absolute;
+  z-index:14;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:62px;
+  width:min(98vw,1000px);
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  padding:0 7px;
+}
+
+.target{
+  position:relative;
+  height:clamp(90px,15vh,145px);
+  cursor:pointer;
+  user-select:none;
+  border:0;
+  padding:8px 7px 6px;
+  color:#3e210e;
+  background:
+    radial-gradient(circle at 50% 25%,rgba(255,255,255,.4),transparent 25%),
+    linear-gradient(#f7dfa5,#d6a85f);
+  clip-path:polygon(
+    3% 3%, 97% 1%, 99% 96%, 72% 98%,
+    50% 96%, 25% 99%, 1% 95%
+  );
+  box-shadow:0 7px 18px rgba(0,0,0,.35);
+  transition:.13s transform,.13s filter;
+}
+
+.target:before{
+  content:"WANTED";
+  display:block;
+  font-family:"Rye",serif;
+  font-size:clamp(9px,1.4vw,15px);
+  letter-spacing:1px;
+  border-bottom:2px solid rgba(72,35,10,.5);
+  padding-bottom:3px;
+  margin-bottom:2px;
+}
+
+.target .answer{
+  height:calc(100% - 25px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(12px,1.55vw,20px);
+  font-weight:800;
+  overflow:hidden;
+}
+
+.target:hover,
+.target.locked{
+  transform:translateY(-7px) scale(1.03);
+  filter:brightness(1.13);
+}
+
+.target.locked{
+  outline:4px solid var(--cyan);
+  box-shadow:
+    0 0 10px var(--cyan),
+    0 0 30px rgba(69,245,255,.8);
+}
+
+.target.correct{
+  outline:5px solid #5dff8a;
+  filter:brightness(1.2);
+}
+
+.target.wrong{
+  outline:5px solid #ff5555;
+  animation:wrongCard .3s;
+}
+
+@keyframes wrongCard{
+  25%{transform:translateX(-8px)}
+  50%{transform:translateX(8px)}
+  75%{transform:translateX(-5px)}
+}
+
+/* RETICLE */
+
+#reticle{
+  position:fixed;
+  z-index:50;
+  width:52px;
+  height:52px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border:3px solid #ffe65b;
+  border-radius:50%;
+  pointer-events:none;
+  display:none;
+  box-shadow:
+    0 0 5px #000,
+    0 0 12px #ffd94f;
+  transition:
+    width .12s,
+    height .12s,
+    border-color .12s,
+    box-shadow .12s;
+}
+
+#reticle:before,
+#reticle:after{
+  content:"";
+  position:absolute;
+  background:currentColor;
+  color:#ffe65b;
+}
+
+#reticle:before{
+  height:2px;
+  width:72px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+#reticle:after{
+  width:2px;
+  height:72px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+#reticle.lock{
+  width:66px;
+  height:66px;
+  border-color:var(--cyan);
+  box-shadow:
+    0 0 10px var(--cyan),
+    0 0 28px var(--cyan);
+}
+
+#reticle.lock:before,
+#reticle.lock:after{
+  color:var(--cyan);
+}
+
+/* bottom bar */
+
+#bottomHUD{
+  position:absolute;
+  z-index:20;
+  left:0;
+  right:0;
+  bottom:5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  padding:0 6px;
+}
+
+.bottomBadge{
+  min-height:45px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(34,15,5,.85);
+  border:2px solid #bd7835;
+  border-radius:11px;
+  color:white;
+  padding:5px 10px;
+  font-size:10px;
+  text-align:center;
+  backdrop-filter:blur(5px);
+}
+
+#shootButton{
+  border:0;
+  border-radius:12px;
+  padding:10px 15px;
+  background:linear-gradient(#ffd95b,#f08b22);
+  color:#3c1b06;
+  font-weight:900;
+  font-size:12px;
+  box-shadow:
+    0 4px 0 #8c3c0d,
+    0 7px 14px rgba(0,0,0,.3);
+  cursor:pointer;
+}
+
+#shootButton:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 #8c3c0d;
+}
+
+/* floating */
+
+.floatText{
+  position:fixed;
+  z-index:80;
+  transform:translate(-50%,-50%);
+  font-family:"Bangers",sans-serif;
+  font-size:clamp(26px,5vw,54px);
+  letter-spacing:2px;
+  text-shadow:
+    3px 3px #2c1406,
+    -2px -2px #2c1406;
+  pointer-events:none;
+  animation:floatUp 1s forwards;
+}
+
+@keyframes floatUp{
+  0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+  100%{opacity:0;transform:translate(-50%,-150%) scale(.9)}
+}
+
+#muzzle{
+  position:fixed;
+  inset:0;
+  z-index:70;
+  pointer-events:none;
+  background:white;
+  opacity:0;
+}
+
+#muzzle.flash{
+  animation:flash .12s;
+}
+
+@keyframes flash{
+  0%{opacity:.55}
+  100%{opacity:0}
+}
+
+.shake{
+  animation:screenShake .18s;
+}
+
+@keyframes screenShake{
+  0%{transform:translate(0)}
+  25%{transform:translate(5px,-3px)}
+  50%{transform:translate(-5px,3px)}
+  75%{transform:translate(3px,2px)}
+  100%{transform:translate(0)}
+}
+
+/* MODALS */
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:15px;
+  background:
+    radial-gradient(circle at 50% 30%,rgba(255,194,88,.16),transparent 35%),
+    rgba(25,10,3,.88);
+  backdrop-filter:blur(7px);
+}
+
+.hidden{
+  display:none!important;
+}
+
+.welcomeBox{
+  width:min(780px,96vw);
+  max-height:94dvh;
+  overflow:auto;
+  border-radius:22px;
+  padding:18px;
+  color:white;
+}
+
+.gameLogo{
+  text-align:center;
+  font-family:"Rye",serif;
+  color:#ffd66c;
+  font-size:clamp(28px,6vw,58px);
+  text-shadow:
+    4px 4px #411d08,
+    0 0 20px rgba(255,193,71,.25);
+}
+
+.gameArabic{
+  text-align:center;
+  color:#fff0c2;
+  font-size:clamp(20px,3vw,30px);
+  margin-top:2px;
+}
+
+.gameLabel{
+  text-align:center;
+  font-weight:800;
+  color:#f7c66b;
+  font-size:13px;
+}
+
+.guide{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:15px 0;
+}
+
+.guideCard{
+  background:rgba(255,244,209,.1);
+  border:1px solid rgba(255,224,150,.25);
+  border-radius:14px;
+  padding:12px 8px;
+  text-align:center;
+}
+
+.guideIcon{
+  font-size:36px;
+  margin-bottom:5px;
+}
+
+.guideTitle{
+  color:#ffe083;
+  font-weight:900;
+  font-size:12px;
+}
+
+.guideText{
+  font-size:10px;
+  opacity:.85;
+}
+
+.actionButtons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+
+.bigBtn{
+  border:0;
+  border-radius:14px;
+  padding:13px;
+  cursor:pointer;
+  font-weight:900;
+  font-size:13px;
+}
+
+.cameraBtn{
+  color:#052b2f;
+  background:linear-gradient(#67f8ff,#28bfc8);
+}
+
+.mouseBtn{
+  color:#3b1c05;
+  background:linear-gradient(#ffd96c,#f19b32);
+}
+
+.note{
+  margin-top:11px;
+  padding:9px;
+  border-radius:10px;
+  background:rgba(0,0,0,.25);
+  text-align:center;
+  font-size:10px;
+  opacity:.9;
+}
+
+#errorBox{
+  margin-top:10px;
+  padding:10px;
+  border-radius:10px;
+  background:rgba(160,20,20,.38);
+  border:1px solid #ff8c8c;
+  font-size:11px;
+}
+
+/* victory */
+
+.victoryBox{
+  width:min(570px,95vw);
+  text-align:center;
+  padding:25px;
+  border-radius:20px;
+  color:white;
+}
+
+.victoryTitle{
+  font-family:"Rye",serif;
+  color:#ffd75f;
+  font-size:clamp(30px,7vw,60px);
+}
+
+#stars{
+  font-size:45px;
+  letter-spacing:5px;
+  filter:drop-shadow(0 4px 4px #000);
+}
+
+.statsGrid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin:15px 0;
+}
+
+.resultStat{
+  background:rgba(0,0,0,.25);
+  padding:10px;
+  border-radius:11px;
+}
+
+.resultStat span{
+  display:block;
+  font-size:10px;
+  opacity:.8;
+}
+
+.resultStat strong{
+  color:#ffe172;
+  font-size:24px;
+}
+
+/* mobile */
+
+@media(max-width:650px){
+
+  .topbar{
+    grid-template-columns:1fr repeat(3,auto);
+    padding:5px;
+    gap:3px;
+  }
+
+  .logoSub{
+    display:none;
+  }
+
+  .stat{
+    font-size:8px;
+    padding:4px;
+  }
+
+  .stat strong{
+    font-size:11px;
+  }
+
+  #questionPanel{
+    top:67px;
+  }
+
+  .questionCard{
+    padding:4px 12px 6px;
+  }
+
+  #targets{
+    bottom:57px;
+    gap:4px;
+    padding:0 4px;
+  }
+
+  .target{
+    height:105px;
+    padding:5px 3px;
+  }
+
+  .target .answer{
+    font-size:11px;
+    line-height:1.55;
+  }
+
+  .bottomBadge{
+    font-size:8px;
+    padding:3px 6px;
+  }
+
+  #shootButton{
+    padding:9px 10px;
+    font-size:10px;
+  }
+
+  .guide{
+    gap:5px;
+  }
+
+  .guideIcon{
+    font-size:27px;
+  }
+
+  .actionButtons{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-height:620px){
+  #questionPanel{top:64px}
+  .target{height:88px}
+  #targets{bottom:52px}
+  #trackingBadge{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+  <!-- fallback Wild West -->
+  <div id="fallbackScene">
+    <div class="sun"></div>
+    <div class="mountain m1"></div>
+    <div class="mountain m2"></div>
+    <div class="cactus c1">🌵</div>
+    <div class="cactus c2">🌵</div>
+
+    <div class="town">
+      <div class="building"><span>ILMI</span></div>
+      <div class="building"><span>TAFSIR</span></div>
+      <div class="building"><span>ARABIC</span></div>
+      <div class="building"><span>SHERIFF</span></div>
+    </div>
+  </div>
+
+  <!-- ONLY VIDEO IS MIRRORED -->
+  <video id="cameraVideo" autoplay playsinline muted></video>
+
+  <div id="cameraTint"></div>
+
+  <canvas id="fxCanvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="topbar woodPanel">
+
+      <div class="logo">
+        <div class="logoTitle">🤠 AR COWBOY TAFSIR</div>
+        <div class="logoSub">Misi Menembak Ma‘ani Kalimah</div>
+      </div>
+
+      <div class="stat">
+        PUSINGAN<br>
+        <strong id="roundText">1/5</strong>
+      </div>
+
+      <div class="stat">
+        🎯 SOALAN<br>
+        <strong id="questionCount">1/20</strong>
+      </div>
+
+      <div class="stat">
+        💰 BOUNTY<br>
+        <strong id="scoreText">0</strong>
+      </div>
+
+    </div>
+
+    <div class="progressWrap">
+      <div id="progress"></div>
+    </div>
+  </div>
+
+  <!-- QUESTION -->
+  <div id="questionPanel">
+    <div class="questionCard">
+      <div class="smallPrompt">
+        🎯 PILIH MAKSUD YANG BETUL
+      </div>
+
+      <div id="questionWord"
+           class="arabic"
+           dir="rtl">
+        كورت
+      </div>
+    </div>
+  </div>
+
+  <div id="trackingBadge">
+    👋 Menunggu permainan bermula...
+  </div>
+
+  <!-- TARGETS -->
+  <div id="targets"></div>
+
+  <!-- RETICLE -->
+  <div id="reticle"></div>
+
+  <!-- BOTTOM -->
+  <div id="bottomHUD">
+
+    <div class="bottomBadge" id="trackingStatus">
+      📷 Kamera belum aktif
+    </div>
+
+    <div class="bottomBadge">
+      ☝️ Arahkan telunjuk • 🤏 Cubit untuk tembak
+    </div>
+
+    <div class="bottomBadge">
+      🔥 COMBO&nbsp;
+      <strong id="comboText">x1</strong>
+    </div>
+
+    <button id="shootButton">
+      🎯 TEMBAK SEKARANG
+    </button>
+
+  </div>
+
+  <div id="muzzle"></div>
+
+</div>
+
+
+<!-- START MODAL -->
+
+<div id="startModal" class="modal">
+
+  <div class="welcomeBox woodPanel">
+
+    <div class="gameLogo">
+      🤠 AR COWBOY TAFSIR
+    </div>
+
+    <div class="gameArabic arabic" dir="rtl">
+      مَعَانِي الْكَلِمَاتِ
+    </div>
+
+    <div class="gameLabel">
+      AR Cowboy — Misi Menembak Ma‘ani Kalimah
+    </div>
+
+    <div class="guide">
+
+      <div class="guideCard">
+        <div class="guideIcon">☝️</div>
+        <div class="guideTitle">1. ARAHKAN TELUNJUK</div>
+        <div class="guideText">
+          Gerakkan jari telunjuk di hadapan kamera.
+        </div>
+      </div>
+
+      <div class="guideCard">
+        <div class="guideIcon">🎯</div>
+        <div class="guideTitle">2. KUNCI SASARAN</div>
+        <div class="guideText">
+          Arahkan crosshair ke papan jawapan.
+        </div>
+      </div>
+
+      <div class="guideCard">
+        <div class="guideIcon">🤏</div>
+        <div class="guideTitle">3. TEMBAK!</div>
+        <div class="guideText">
+          Cubit ibu jari dan telunjuk apabila sasaran dikunci.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actionButtons">
+
+      <button id="cameraStart"
+              class="bigBtn cameraBtn">
+        📹 BUKA KAMERA & MULA
+      </button>
+
+      <button id="mouseStart"
+              class="bigBtn mouseBtn">
+        🖱️ MAIN DENGAN TETIKUS / SENTUHAN
+      </button>
+
+    </div>
+
+    <div id="errorBox" class="hidden">
+      ⚠️ Kamera tidak dapat dibuka.
+      Pastikan browser mempunyai kebenaran kamera dan halaman dibuka melalui HTTPS.
+      <br><br>
+      <button id="retryCamera"
+              class="bigBtn cameraBtn">
+        🔄 CUBA KAMERA LAGI
+      </button>
+    </div>
+
+    <div class="note">
+      🌟 Permainan pendidikan tanpa imej senjata realistik.
+      Sasaran ditembak menggunakan crosshair kartun dan kesan cahaya.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- VICTORY -->
+
+<div id="victoryModal" class="modal hidden">
+
+  <div class="victoryBox woodPanel">
+
+    <div class="victoryTitle">
+      🏆 MISSION COMPLETE!
+    </div>
+
+    <div class="arabic"
+         dir="rtl"
+         style="font-size:24px;color:#ffeab0">
+      أَحْسَنْتَ!
+    </div>
+
+    <div id="stars">
+      ⭐⭐⭐
+    </div>
+
+    <div class="statsGrid">
+
+      <div class="resultStat">
+        <span>💰 JUMLAH BOUNTY</span>
+        <strong id="finalScore">0</strong>
+      </div>
+
+      <div class="resultStat">
+        <span>🔥 COMBO TERTINGGI</span>
+        <strong id="finalCombo">x1</strong>
+      </div>
+
+      <div class="resultStat">
+        <span>✅ JAWAPAN BETUL</span>
+        <strong id="finalCorrect">0/20</strong>
+      </div>
+
+      <div class="resultStat">
+        <span>🎯 KETEPATAN</span>
+        <strong id="finalAccuracy">0%</strong>
+      </div>
+
+    </div>
+
+    <div class="actionButtons">
+
+      <button id="replayBtn"
+              class="bigBtn cameraBtn">
+        🔄 MAIN SEMULA
+      </button>
+
+      <button id="menuBtn"
+              class="bigBtn mouseBtn">
+        🏠 KE MENU
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+
+/* ======================================================
+   AR COWBOY TAFSIR
+   Single-file educational game
+====================================================== */
+
+
+/* ======================
+   VOCABULARY BANK
+====================== */
+
+const VOCAB = [
+
+["كورت","ذهب بضوئها"],
+["انكدرت","تساقطت"],
+["زوجت","قرنت كل نفس بشكلها"],
+["أحضرت","من خير وشر"],
+["الأعلى","العلو الذي هو القهر والإقتدار"],
+["ولايحيى","حياة يتلذذ بها"],
+["والضحى","وقت الضحى"],
+["فلا تقهر","فلا تظلمه لضعفه"],
+["فلا تنهر","فلا تزجره"],
+["قد أفلح","نال الفوز"],
+["وهذا البلد","مكة"],
+["وطور سينين","هو الجبل كلم الله موسى عنده"],
+["في أحسن تقويم","في أحسن تعديل لشكله"],
+["زلزلت","اضطربت"],
+["أثقالها","كنوزها"],
+["أشتاتا","بيض الوجوه آمنين وسود الوجوه فازعين"],
+["كالعهن","وهو الصوف مصبغ ألوانا لتفرق أجزائها"],
+["موازينه","هو العمل الذي له وزن عند الله"],
+["نار حامية","بلغت النهاية في الحرارة"],
+["التكاثر","شغلكم التباري في الكثرة"],
+["علم اليقين","علم الأمر اليقين"],
+["عين اليقين","الرؤية التي هي نفس اليقين وخالصته"],
+["الإنسان","جنس الإنسان / الناس"],
+["وتواصوا بالصبر","الصبر عن المعاصي، وعلى الطاعات، وعلى البلاء"],
+["تضليل","تضييع وإبطال"],
+["كعصف مأكول","زرع أكله الدود"],
+["والفتح","فتح البلاد مكة"],
+["توابا","الكثير القبول للتوبة"],
+["أحد","هو أن الله واحد لا ثاني له"],
+["الصمد","السيد"],
+["كفوا","لم يماثله"],
+["الفلق","الصبح / الخلق"],
+["غاسق","الليل إذا اشتد ظلامه"],
+["النفاثات","النساء"],
+["ملك الناس","مالكهم ومدبر أمورهم"],
+["الوسواس","الصوت الخفي"]
+
+];
+
+
+/* ======================
+   ELEMENTS
+====================== */
+
+const video =
+document.getElementById("cameraVideo");
+
+const targets =
+document.getElementById("targets");
+
+const questionWord =
+document.getElementById("questionWord");
+
+const scoreText =
+document.getElementById("scoreText");
+
+const comboText =
+document.getElementById("comboText");
+
+const questionCount =
+document.getElementById("questionCount");
+
+const roundText =
+document.getElementById("roundText");
+
+const progress =
+document.getElementById("progress");
+
+const reticle =
+document.getElementById("reticle");
+
+const trackingStatus =
+document.getElementById("trackingStatus");
+
+const trackingBadge =
+document.getElementById("trackingBadge");
+
+const startModal =
+document.getElementById("startModal");
+
+const victoryModal =
+document.getElementById("victoryModal");
+
+const fxCanvas =
+document.getElementById("fxCanvas");
+
+const ctx =
+fxCanvas.getContext("2d");
+
+
+/* ======================
+   GAME VARIABLES
+====================== */
+
+let questions=[];
+
+let questionIndex=0;
+
+let score=0;
+
+let correctCount=0;
+
+let combo=1;
+
+let highestCombo=1;
+
+let lockedTargetElement=null;
+
+let gameActive=false;
+
+let cameraMode=false;
+
+let lastShot=0;
+
+let lastLock=null;
+
+let audioCtx=null;
+
+let particles=[];
+
+let mediaCamera=null;
+
+
+/* ======================
+   UTILITIES
+====================== */
+
+function shuffle(array){
+
+ const arr=[...array];
+
+ for(let i=arr.length-1;i>0;i--){
+
+  const j=Math.floor(Math.random()*(i+1));
+
+  [arr[i],arr[j]]=
+  [arr[j],arr[i]];
+
+ }
+
+ return arr;
+
+}
+
+
+function createQuestions(){
+
+ const chosen=
+ shuffle(VOCAB).slice(0,20);
+
+ return chosen.map(item=>{
+
+   const wrong=
+   shuffle(
+     VOCAB.filter(v=>v[0]!==item[0])
+   )
+   .slice(0,3)
+   .map(v=>v[1]);
+
+   const options=
+   shuffle([
+     item[1],
+     ...wrong
+   ]);
+
+   return{
+     word:item[0],
+     correct:item[1],
+     options
+   };
+
+ });
+
+}
+
+
+/* ======================
+   AUDIO
+====================== */
+
+function initAudio(){
+
+ if(!audioCtx){
+
+   audioCtx=
+   new(
+     window.AudioContext||
+     window.webkitAudioContext
+   )();
+
+ }
+
+ if(audioCtx.state==="suspended")
+   audioCtx.resume();
+
+}
+
+
+function tone(freq,duration,type="sine",volume=.1,delay=0){
+
+ if(!audioCtx)return;
+
+ const osc=audioCtx.createOscillator();
+ const gain=audioCtx.createGain();
+
+ osc.type=type;
+ osc.frequency.value=freq;
+
+ gain.gain.setValueAtTime(
+   volume,
+   audioCtx.currentTime+delay
+ );
+
+ gain.gain.exponentialRampToValueAtTime(
+   .001,
+   audioCtx.currentTime+delay+duration
+ );
+
+ osc.connect(gain);
+ gain.connect(audioCtx.destination);
+
+ osc.start(audioCtx.currentTime+delay);
+ osc.stop(audioCtx.currentTime+delay+duration);
+
+}
+
+
+function aimSound(){
+
+ tone(900,.08,"sine",.05);
+ tone(1300,.07,"sine",.035,.04);
+
+}
+
+
+function shootSound(){
+
+ if(!audioCtx)return;
+
+ tone(100,.09,"square",.12);
+ tone(65,.14,"sawtooth",.08,.03);
+
+}
+
+
+function correctSound(){
+
+ tone(523,.25,"sine",.09);
+ tone(659,.25,"sine",.08,.07);
+ tone(784,.32,"sine",.08,.14);
+ tone(1046,.4,"sine",.07,.2);
+
+}
+
+
+function wrongSound(){
+
+ tone(130,.25,"sawtooth",.1);
+ tone(85,.3,"square",.06,.06);
+
+}
+
+
+function fanfare(){
+
+ const notes=[
+  [392,0],
+  [523,.15],
+  [659,.3],
+  [784,.45],
+  [1046,.65]
+ ];
+
+ notes.forEach(n=>{
+   tone(n[0],.45,"triangle",.1,n[1]);
+ });
+
+}
+
+
+/* ======================
+   PARTICLES
+====================== */
+
+function resizeCanvas(){
+
+ fxCanvas.width=innerWidth;
+ fxCanvas.height=innerHeight;
+
+}
+
+window.addEventListener(
+ "resize",
+ resizeCanvas
+);
+
+resizeCanvas();
+
+
+function burst(x,y,color){
+
+ for(let i=0;i<35;i++){
+
+   particles.push({
+
+     x,
+     y,
+
+     vx:(Math.random()-.5)*11,
+     vy:(Math.random()-.5)*11,
+
+     life:1,
+
+     size:
+     Math.random()*5+2,
+
+     color
+
+   });
+
+ }
+
+}
+
+
+function particleLoop(){
+
+ ctx.clearRect(
+  0,
+  0,
+  fxCanvas.width,
+  fxCanvas.height
+ );
+
+ particles.forEach(p=>{
+
+   p.x+=p.vx;
+   p.y+=p.vy;
+
+   p.vy+=.18;
+
+   p.life-=.025;
+
+   ctx.globalAlpha=
+   Math.max(0,p.life);
+
+   ctx.fillStyle=p.color;
+
+   ctx.fillRect(
+    p.x,
+    p.y,
+    p.size,
+    p.size
+   );
+
+ });
+
+ ctx.globalAlpha=1;
+
+ particles=
+ particles.filter(
+   p=>p.life>0
+ );
+
+ requestAnimationFrame(
+   particleLoop
+ );
+
+}
+
+particleLoop();
+
+
+/* ======================
+   FLOATING TEXT
+====================== */
+
+function floatingText(text,color,x=innerWidth/2,y=innerHeight/2){
+
+ const el=
+ document.createElement("div");
+
+ el.className="floatText";
+
+ el.textContent=text;
+
+ el.style.color=color;
+
+ el.style.left=x+"px";
+ el.style.top=y+"px";
+
+ document.body.appendChild(el);
+
+ setTimeout(
+   ()=>el.remove(),
+   1000
+ );
+
+}
+
+
+/* ======================
+   QUESTION DISPLAY
+====================== */
+
+function loadQuestion(){
+
+ if(questionIndex>=20){
+
+   endGame();
+   return;
+
+ }
+
+ lockedTargetElement=null;
+
+ reticle.classList.remove("lock");
+
+ const q=
+ questions[questionIndex];
+
+ questionWord.textContent=
+ q.word;
+
+ questionCount.textContent=
+ `${questionIndex+1}/20`;
+
+ const round=
+ Math.floor(questionIndex/4)+1;
+
+ roundText.textContent=
+ `${round}/5`;
+
+ progress.style.width=
+ `${(questionIndex/20)*100}%`;
+
+ targets.innerHTML="";
+
+ q.options.forEach(option=>{
+
+   const btn=
+   document.createElement("button");
+
+   btn.className="target";
+
+   btn.dataset.answer=option;
+
+   const answer=
+   document.createElement("div");
+
+   answer.className=
+   "answer arabic";
+
+   answer.dir="rtl";
+
+   answer.textContent=
+   option;
+
+   btn.appendChild(answer);
+
+   btn.addEventListener(
+     "click",
+     ()=>{
+
+       if(!gameActive)return;
+
+       lockedTargetElement=btn;
+
+       shoot();
+
+     }
+   );
+
+   targets.appendChild(btn);
+
+ });
+
+}
+
+
+/* ======================
+   SHOOT
+====================== */
+
+function shoot(){
+
+ if(!gameActive)
+ return;
+
+ if(!lockedTargetElement){
+
+   floatingText(
+     "🎯 KUNCI SASARAN DAHULU!",
+     "#55f6ff"
+   );
+
+   return;
+
+ }
+
+ const now=Date.now();
+
+ if(now-lastShot<800)
+ return;
+
+ lastShot=now;
+
+ initAudio();
+ shootSound();
+
+ const muzzle=
+ document.getElementById("muzzle");
+
+ muzzle.classList.remove("flash");
+
+ void muzzle.offsetWidth;
+
+ muzzle.classList.add("flash");
+
+ document.getElementById("game")
+ .classList.add("shake");
+
+ setTimeout(
+ ()=>{
+  document.getElementById("game")
+  .classList.remove("shake");
+ },
+ 180
+ );
+
+ const target=
+ lockedTargetElement;
+
+ const rect=
+ target.getBoundingClientRect();
+
+ burst(
+  rect.left+rect.width/2,
+  rect.top+rect.height/2,
+  "#ffd84f"
+ );
+
+ const answer=
+ target.dataset.answer;
+
+ const q=
+ questions[questionIndex];
+
+ if(answer===q.correct){
+
+   handleCorrect(target);
+
+ }else{
+
+   handleWrong(target);
+
+ }
+
+}
+
+
+/* ======================
+   CORRECT
+====================== */
+
+function handleCorrect(target){
+
+ target.classList.add("correct");
+
+ correctCount++;
+
+ const base=100;
+
+ const bonus=
+ combo>1
+ ? (combo-1)*50
+ : 0;
+
+ const gained=
+ base+bonus;
+
+ score+=gained;
+
+ correctSound();
+
+ const rect=
+ target.getBoundingClientRect();
+
+ burst(
+  rect.left+rect.width/2,
+  rect.top+rect.height/2,
+  "#58ff9c"
+ );
+
+ burst(
+  rect.left+rect.width/2,
+  rect.top+rect.height/2,
+  "#55efff"
+ );
+
+ floatingText(
+  `+${gained} BOUNTY!`,
+  "#ffe263",
+  rect.left+rect.width/2,
+  rect.top
+ );
+
+ combo++;
+
+ highestCombo=
+ Math.max(
+   highestCombo,
+   combo
+ );
+
+ if(combo>2){
+
+   setTimeout(()=>{
+
+     floatingText(
+       `🔥 COMBO x${combo-1}!`,
+       "#54f6ff"
+     );
+
+   },150);
+
+ }
+
+ updateHUD();
+
+ gameActive=false;
+
+ setTimeout(()=>{
+
+   questionIndex++;
+
+   gameActive=true;
+
+   loadQuestion();
+
+ },900);
+
+}
+
+
+/* ======================
+   WRONG
+====================== */
+
+function handleWrong(target){
+
+ wrongSound();
+
+ combo=1;
+
+ target.classList.add("wrong");
+
+ const rect=
+ target.getBoundingClientRect();
+
+ burst(
+  rect.left+rect.width/2,
+  rect.top+rect.height/2,
+  "#ff5252"
+ );
+
+ floatingText(
+   "❌ SALAH SASARAN!",
+   "#ff6767",
+   rect.left+rect.width/2,
+   rect.top
+ );
+
+ updateHUD();
+
+ setTimeout(()=>{
+
+   target.classList.remove("wrong");
+
+ },500);
+
+}
+
+
+/* ======================
+   HUD
+====================== */
+
+function updateHUD(){
+
+ scoreText.textContent=
+ score;
+
+ comboText.textContent=
+ `x${combo}`;
+
+}
+
+
+/* ======================
+   RETICLE COLLISION
+====================== */
+
+function updateReticle(x,y){
+
+ reticle.style.display="block";
+
+ reticle.style.left=x+"px";
+ reticle.style.top=y+"px";
+
+ let found=null;
+
+ document
+ .querySelectorAll(".target")
+ .forEach(target=>{
+
+   const r=
+   target.getBoundingClientRect();
+
+   const inside=
+   x>=r.left &&
+   x<=r.right &&
+   y>=r.top &&
+   y<=r.bottom;
+
+   target.classList.toggle(
+     "locked",
+     inside
+   );
+
+   if(inside)
+   found=target;
+
+ });
+
+ lockedTargetElement=
+ found;
+
+ if(found){
+
+   reticle.classList.add("lock");
+
+   trackingBadge.textContent=
+   "🎯 SASARAN DIKUNCI!";
+
+   if(lastLock!==found){
+
+     aimSound();
+
+     lastLock=found;
+
+   }
+
+ }else{
+
+   reticle.classList.remove("lock");
+
+   trackingBadge.textContent=
+   cameraMode
+   ? "☝️ Arahkan telunjuk ke papan jawapan"
+   : "🖱️ Gerakkan kursor ke sasaran";
+
+   lastLock=null;
+
+ }
+
+}
+
+
+/* ======================
+   MOUSE FALLBACK
+====================== */
+
+document.addEventListener(
+ "mousemove",
+ e=>{
+
+   if(!gameActive)
+   return;
+
+   if(cameraMode)
+   return;
+
+   updateReticle(
+     e.clientX,
+     e.clientY
+   );
+
+ }
+);
+
+
+document.addEventListener(
+ "touchmove",
+ e=>{
+
+   if(!gameActive)
+   return;
+
+   if(cameraMode)
+   return;
+
+   const t=e.touches[0];
+
+   updateReticle(
+     t.clientX,
+     t.clientY
+   );
+
+ },
+ {passive:true}
+);
+
+
+/* ======================
+   MEDIAPIPE HANDS
+====================== */
+
+let hands;
+
+
+async function setupHands(){
+
+ hands=
+ new Hands({
+
+   locateFile:file=>
+   `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+
+ });
+
+ hands.setOptions({
+
+   maxNumHands:1,
+
+   modelComplexity:1,
+
+   minDetectionConfidence:.55,
+
+   minTrackingConfidence:.55
+
+ });
+
+ hands.onResults(
+   onHandsResults
+ );
+
+}
+
+
+function onHandsResults(results){
+
+ if(!gameActive)
+ return;
+
+ if(
+   !results.multiHandLandmarks ||
+   results.multiHandLandmarks.length===0
+ ){
+
+   trackingStatus.textContent=
+   "🖐️ Tangan tidak dikesan";
+
+   trackingBadge.textContent=
+   "👋 Tunjukkan tangan kepada kamera";
+
+   return;
+
+ }
+
+ trackingStatus.textContent=
+ "🟢 Tangan dikesan";
+
+ const lm=
+ results.multiHandLandmarks[0];
+
+ const indexTip=lm[8];
+
+ const thumbTip=lm[4];
+
+ /*
+ Camera is mirrored visually.
+ Pointer must use 1-x.
+ */
+
+ const x=
+ (1-indexTip.x)*innerWidth;
+
+ const y=
+ indexTip.y*innerHeight;
+
+ updateReticle(x,y);
+
+
+ /* PINCH */
+
+ const dx=
+ indexTip.x-thumbTip.x;
+
+ const dy=
+ indexTip.y-thumbTip.y;
+
+ const distance=
+ Math.sqrt(
+   dx*dx+
+   dy*dy
+ );
+
+ /*
+ Intentionally conservative threshold.
+ */
+
+ if(
+   distance<.045 &&
+   lockedTargetElement
+ ){
+
+   shoot();
+
+ }
+
+}
+
+
+/* ======================
+   CAMERA
+====================== */
+
+async function startCamera(){
+
+ initAudio();
+
+ document
+ .getElementById("errorBox")
+ .classList.add("hidden");
+
+ try{
+
+   await setupHands();
+
+   mediaCamera=
+   new Camera(video,{
+
+     onFrame:async()=>{
+
+       if(hands){
+
+         await hands.send({
+           image:video
+         });
+
+       }
+
+     },
+
+     width:1280,
+     height:720
+
+   });
+
+   await mediaCamera.start();
+
+   cameraMode=true;
+
+   trackingStatus.textContent=
+   "📷 Kamera aktif";
+
+   startGame();
+
+ }catch(err){
+
+   console.error(err);
+
+   document
+   .getElementById("errorBox")
+   .classList.remove("hidden");
+
+ }
+
+}
+
+
+/* ======================
+   START GAME
+====================== */
+
+function startGame(){
+
+ startModal.classList.add("hidden");
+
+ victoryModal.classList.add("hidden");
+
+ questions=createQuestions();
+
+ questionIndex=0;
+ score=0;
+ correctCount=0;
+ combo=1;
+ highestCombo=1;
+
+ gameActive=true;
+
+ updateHUD();
+
+ loadQuestion();
+
+ if(cameraMode){
+
+   trackingBadge.textContent=
+   "👋 Tunjukkan tangan kepada kamera";
+
+ }else{
+
+   trackingStatus.textContent=
+   "🖱️ Mod Tetikus / Sentuhan";
+
+   trackingBadge.textContent=
+   "🖱️ Pilih papan jawapan";
+
+ }
+
+}
+
+
+/* ======================
+   END GAME
+====================== */
+
+function endGame(){
+
+ gameActive=false;
+
+ progress.style.width="100%";
+
+ reticle.style.display="none";
+
+ fanfare();
+
+ confetti({
+
+   particleCount:180,
+
+   spread:100,
+
+   origin:{
+     y:.6
+   }
+
+ });
+
+ setTimeout(()=>{
+
+   confetti({
+
+     particleCount:120,
+
+     spread:130,
+
+     origin:{
+       x:.2,
+       y:.5
+     }
+
+   });
+
+   confetti({
+
+     particleCount:120,
+
+     spread:130,
+
+     origin:{
+       x:.8,
+       y:.5
+     }
+
+   });
+
+ },400);
+
+
+ let stars="⭐";
+
+ if(correctCount>=17)
+   stars="⭐⭐⭐";
+
+ else if(correctCount>=13)
+   stars="⭐⭐";
+
+
+ const accuracy=
+ Math.round(
+   (correctCount/20)*100
+ );
+
+
+ document
+ .getElementById("stars")
+ .textContent=stars;
+
+ document
+ .getElementById("finalScore")
+ .textContent=score;
+
+ document
+ .getElementById("finalCombo")
+ .textContent=
+ `x${Math.max(1,highestCombo-1)}`;
+
+ document
+ .getElementById("finalCorrect")
+ .textContent=
+ `${correctCount}/20`;
+
+ document
+ .getElementById("finalAccuracy")
+ .textContent=
+ `${accuracy}%`;
+
+ victoryModal
+ .classList.remove("hidden");
+
+}
+
+
+/* ======================
+   BUTTONS
+====================== */
+
+document
+.getElementById("cameraStart")
+.addEventListener(
+ "click",
+ startCamera
+);
+
+
+document
+.getElementById("retryCamera")
+.addEventListener(
+ "click",
+ startCamera
+);
+
+
+document
+.getElementById("mouseStart")
+.addEventListener(
+ "click",
+ ()=>{
+
+   initAudio();
+
+   cameraMode=false;
+
+   video.style.display="none";
+
+   reticle.style.display="block";
+
+   startGame();
+
+ }
+);
+
+
+document
+.getElementById("shootButton")
+.addEventListener(
+ "click",
+ ()=>{
+
+   /*
+   Critical rule:
+   button cannot fire into empty space.
+   */
+
+   if(lockedTargetElement)
+     shoot();
+
+   else
+     floatingText(
+       "🎯 KUNCI SASARAN!",
+       "#55f6ff"
+     );
+
+ }
+);
+
+
+document
+.getElementById("replayBtn")
+.addEventListener(
+ "click",
+ ()=>{
+
+   victoryModal
+   .classList.add("hidden");
+
+   startGame();
+
+ }
+);
+
+
+document
+.getElementById("menuBtn")
+.addEventListener(
+ "click",
+ ()=>{
+
+   victoryModal
+   .classList.add("hidden");
+
+   startModal
+   .classList.remove("hidden");
+
+   gameActive=false;
+
+   reticle.style.display="none";
+
+ }
+);
+
+
+/* ======================
+   SPACEBAR SHOOT
+====================== */
+
+document.addEventListener(
+ "keydown",
+ e=>{
+
+   if(
+     e.code==="Space" &&
+     gameActive
+   ){
+
+     e.preventDefault();
+
+     shoot();
+
+   }
+
+ }
+);
+
+
+/* ======================
+   PREVENT ACCIDENTAL
+   DOUBLE TAP ZOOM
+====================== */
+
+let lastTouchEnd=0;
+
+document.addEventListener(
+ "touchend",
+ event=>{
+
+   const now=
+   Date.now();
+
+   if(now-lastTouchEnd<=300){
+
+     event.preventDefault();
+
+   }
+
+   lastTouchEnd=now;
+
+ },
+ {passive:false}
+);
+
+
+/* ======================
+   INITIAL
+====================== */
+
+questions=createQuestions();
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>
